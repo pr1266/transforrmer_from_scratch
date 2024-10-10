@@ -63,3 +63,39 @@ class TransformerBlock(nn.Module):
             nn.Linear(forward_expantion*embed_size, embed_size),
         )
         self.dropout = nn.Dropout(droput)
+
+    def forward(self, value, key, query, mask):
+        attention = self.attention(value, key, query, mask)
+        x = self.dropout(self.norm1(attention+query))
+        forward = self.feed_forward(x)
+        out = self.droupout(self.norm2(forward+x))
+        return out
+    
+class Encoder(nn.Module):
+    def __init__(self, scr_vocab_size, embed_size, num_layers, heads, device, forward_expantion, dropout, max_length):
+        super(Encoder, self).__init__()
+        self.embed_size = embed_size
+        self.device = device
+        self.word_embedding = nn.Embedding(scr_vocab_size, embed_size)
+        self.position_embedding = nn.Embedding(max_length, embed_size)
+        self.layers = nn.ModuleList(
+            [
+                TransformerBlock(
+                    embed_size,
+                    heads,
+                    dropout=dropout,
+                    forward_expantion=forward_expantion
+                )
+            ]
+        )
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(self, x, mask):
+        N, seq_len = x.shape
+        positions = torch.arange(0, seq_len).expand(N, seq_len).to(self.device)
+        out = self.dropout(self.word_embedding(x) + self.position_embedding(positions))
+
+        for layer in self.layer:
+            out = layer(out, out, out, mask)
+
+        return out
