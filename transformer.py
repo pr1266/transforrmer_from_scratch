@@ -48,3 +48,18 @@ class SelfAttention(nn.Module):
         out = self.fc_out(out)
         return out
     
+class TransformerBlock(nn.Module):
+
+    def __init__(self, embed_size, heads, droput, forward_expantion):
+        super(TransformerBlock, self).__init__()
+        self.attention = SelfAttention(embed_size, heads)
+
+        self.norm1 = nn.LayerNorm(embed_size)
+        self.norm2 = nn.LayerNorm(embed_size)
+
+        self.feed_forward = nn.Sequential(
+            nn.Linear(embed_size, forward_expantion*embed_size),
+            nn.ReLU(),
+            nn.Linear(forward_expantion*embed_size, embed_size),
+        )
+        self.dropout = nn.Dropout(droput)
